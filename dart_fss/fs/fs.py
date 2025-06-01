@@ -139,6 +139,7 @@ class FinancialStatement(object):
             저장할 폴더(default: 실행폴더/fsdata)
         """
         import os
+        import json
 
         if path is None:
             path = os.getcwd()
@@ -149,18 +150,46 @@ class FinancialStatement(object):
             filename = '{}_{}.xlsx'.format(self.info.get('corp_code'), self.info.get('report_tp'))
 
         file_path = os.path.join(path, filename)
-        with pd.ExcelWriter(file_path) as writer:
-            infodf = pd.DataFrame({"info": self.info})
-            infodf.to_excel(writer, sheet_name="info")
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        if file_ext == '.json':
+            # JSON 형식으로 각 재무제표 유형별 개별 파일 저장
+            base_name = os.path.splitext(filename)[0]  # 확장자 제거
+            saved_files = []
+
             for tp in self._statements:
                 fs = self._statements[tp]
-                if fs is not None:
-                    sheet_name = "Data_" + tp
-                    fs.to_excel(writer, sheet_name=sheet_name)
-                    sheet_name = "Labels_" + tp
-                    label = self._labels[tp]
-                    label.to_excel(writer, sheet_name=sheet_name)
-        return file_path
+                label = self._labels.get(tp)
+
+                # 데이터나 레이블이 하나라도 있는 경우에만 파일 생성
+                if fs is not None or label is not None:
+                    tp_filename = f"{base_name}_{tp}.json"
+                    import pdb; pdb.set_trace()
+                    tp_file_path = os.path.join(path, tp_filename)
+
+                    # 각 재무제표 유형별 데이터 구성
+                    data_to_save = {
+                    }
+
+                with open(tp_file_path, 'w', encoding='utf-8') as f:
+                    json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+
+                saved_files.append(tp_file_path)
+
+            return saved_files
+        else:
+            with pd.ExcelWriter(file_path) as writer:
+                infodf = pd.DataFrame({"info": self.info})
+                infodf.to_excel(writer, sheet_name="info")
+                for tp in self._statements:
+                    fs = self._statements[tp]
+                    if fs is not None:
+                        sheet_name = "Data_" + tp
+                        fs.to_excel(writer, sheet_name=sheet_name)
+                        sheet_name = "Labels_" + tp
+                        label = self._labels[tp]
+                        label.to_excel(writer, sheet_name=sheet_name)
+            return file_path
 
     @classmethod
     def load(cls, filepath):

@@ -141,6 +141,7 @@ class FinancialStatement(object):
         import os
         import json
 
+        import pdb; pdb.set_trace()
         if path is None:
             path = os.getcwd()
             path = os.path.join(path, "fsdata")
@@ -164,11 +165,14 @@ class FinancialStatement(object):
                 # 데이터나 레이블이 하나라도 있는 경우에만 파일 생성
                 if fs is not None or label is not None:
                     tp_filename = f"{base_name}_{tp}.json"
-                    import pdb; pdb.set_trace()
                     tp_file_path = os.path.join(path, tp_filename)
 
                     # 각 재무제표 유형별 데이터 구성
                     data_to_save = {
+                        "info": self.info,
+                        "statement_type": tp,
+                        "statement_data": fs.to_dict(orient='split') if fs is not None else None,
+                        "label_data": label.to_dict(orient='split') if label is not None else None
                     }
 
                 with open(tp_file_path, 'w', encoding='utf-8') as f:

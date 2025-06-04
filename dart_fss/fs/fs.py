@@ -24,6 +24,10 @@ class FinancialStatement(object):
             pd.options.display.float_format = '{:,}'.format
         else:
             pd.options.display.float_format = '{:}'.format
+
+        target_unit = info.get('target_unit', '원')
+        if target_unit != '원':
+            # target_unit에 맞춰 statements 내 데이터 수정 
         self._statements = statements
         # Fix order
         self._order = [tp for tp in ('bs', 'is', 'cis', 'cf') if tp in self._statements]

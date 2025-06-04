@@ -1427,6 +1427,7 @@ def extract(corp_code: str,
             report_tp: Union[str, List[str]] = 'annual',
             lang: str = 'ko',
             separator: bool = True,
+            target_unit: str = '원',  # new parameter
             dataset: str = 'xbrl',
             cumulative: bool = False,
             progressbar: bool = True,
@@ -1594,7 +1595,8 @@ def extract(corp_code: str,
             'separate': separate,
             'report_tp': report_tp,
             'lang': lang,
-            'separator': separator
+            'separator': separator,
+            'target_unit': target_unit
         }
         return FinancialStatement(statements, label_df, info)
     except Exception as e:

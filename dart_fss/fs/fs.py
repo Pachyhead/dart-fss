@@ -262,3 +262,27 @@ class FinancialStatement(object):
         keys.pop('financial statement')
         dirs.extend(keys)
         return dirs
+
+    def _convert_statements_unit(self, statements: Dict[str, DataFrame], target_unit: str) -> Dict[str, DataFrame]:
+        """모든 재무제표 데이터를 target_unit으로 변환"""
+        from dart_fss.utils import str_unit_to_number_unit
+        
+        # 목표 단위의 승수 계산
+        target_multiplier = str_unit_to_number_unit(target_unit)
+        
+        converted_statements = {}
+        for fs_type, df in statements.items():
+            if df is None:
+                converted_statements[fs_type] = None
+                continue
+                
+            converted_df = df.copy()
+            
+            # 숫자 컬럼들을 찾아서 변환
+            for column in df.columns:
+                # if self.AAAAAAAA(df[column]): # Data Frame 내 값이 숫자 값인지 확인하는 함수가 필요
+                #    # 원 단위 기준 데이터를 target_unit으로 변환
+                #    converted_df[column] = df[column] / target_multiplier
+                     
+        return converted_statements
+

@@ -211,6 +211,7 @@ class Corp(object):
                    report_tp: str = 'annual',
                    lang: str = 'ko',
                    separator: bool = True,
+                   target_unit: str = '원', # 새로운 파라미터 추가
                    dataset: str = 'xbrl',
                    cumulative: bool = False,
                    progressbar: bool = True,
@@ -255,4 +256,4 @@ class Corp(object):
             제무제표 검색 결과
          """
         return extract(self.corp_code, bgn_de, end_de, fs_tp, separate, report_tp, lang,
-                       separator, dataset, cumulative, progressbar, skip_error, last_report_only, min_required)
+                       separator, target_unit, dataset, cumulative, progressbar, skip_error, last_report_only, min_required)

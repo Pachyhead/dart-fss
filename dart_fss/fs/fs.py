@@ -280,9 +280,30 @@ class FinancialStatement(object):
             
             # 숫자 컬럼들을 찾아서 변환
             for column in df.columns:
-                # if self.AAAAAAAA(df[column]): # Data Frame 내 값이 숫자 값인지 확인하는 함수가 필요
-                #    # 원 단위 기준 데이터를 target_unit으로 변환
-                #    converted_df[column] = df[column] / target_multiplier
+                if self._is_numeric_column(df[column]): 
+                   # 원 단위 기준 데이터를 target_unit으로 변환
+                   # pandas braodcast 연산을 사용하여 column 내 모든 값에 대해 변환 적용
+                   converted_df[column] = df[column] / target_multiplier
                      
         return converted_statements
 
+    def _is_numeric_column(self, series) -> bool:
+        # label_ko, comment, concept_id, class* column 제외
+        if series.name and len(series.name) > 1:
+            column_name = series.name[1]
+            if isinstance(column_name, str):
+                # 메타데이터 컬럼들 제외
+                excluded_columns = ['label_ko', 'comment', 'concept_id']
+                if column_name in excluded_columns:
+                    return False
+
+                # class로 시작하는 컬럼들도 제외 (class0, class1, class2, ...)
+                if column_name.startswith('class'):
+                    return False
+
+        # 날짜 패턴이 있는 컬럼만 변환 (실제 재무 데이터)
+        import re
+        date_pattern = re.compile(r'\d{8}')
+        if series.name and date_pattern.search(str(series.name[0])):
+            return True
+        return False

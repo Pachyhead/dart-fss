@@ -1,0 +1,144 @@
+name: Test DART-FSS Integration with Trading Halt Error Handling
+
+on:
+  push:
+    branches: [ fix/trading-halt-error-handling ]
+  workflow_dispatch:  # 수동 실행 허용
+
+jobs:
+  test-prac01:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        
+    - name: Create test directory
+      run: |
+        mkdir -p test_output
+        
+    - name: Create modified prac01.py for testing
+      env:
+        DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      run: |
+        cat > test_prac01.py << 'EOF'
+        import dart_fss as dart
+        import os
+        import sys
+        
+        # GitHub Secrets에서 API 키 가져오기
+        api_key = os.environ.get('DART_API_KEY', '')
+        if not api_key:
+            print("❌ No API key provided")
+            sys.exit(1)
+            
+        print("🔑 Setting API key...")
+        dart.set_api_key(api_key=api_key)
+        
+        try:
+            print("📋 Loading corporation list...")
+            corp_list = dart.get_corp_list()
+            print("✅ Corporation list loaded successfully")
+            
+            print("🔍 Searching for Samsung Electronics...")
+            samsung = corp_list.find_by_corp_name('삼성전자', exactly=True)[0]
+            print(f"✅ Samsung Electronics found: {samsung.corp_name}")
+            
+            print("📊 Extracting financial statements from 2024...")
+            fs = samsung.extract_fs(bgn_de='20240101')
+            print("✅ Financial statements extracted successfully")
+            
+            print("💾 Saving financial statements...")
+            saved_path = fs.save(path='test_output')
+            print(f"✅ Financial statements saved to: {saved_path}")
+            
+            print("🎉 All tests completed successfully!")
+            
+        except SystemExit as e:
+            if 'trading halt' in str(e).lower() or '거래정지' in str(e):
+                print("❌ Trading halt error handling test failed")
+                print(f"Error: {e}")
+                sys.exit(1)
+            else:
+                print(f"❌ Unexpected system exit: {e}")
+                sys.exit(1)
+        except Exception as e:
+            print(f"❌ Error occurred: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+        EOF
+        
+    - name: Run prac01.py test
+      env:
+        DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      run: |
+        python test_prac01.py
+        
+    - name: Verify output files
+      run: |
+        echo "📁 Checking generated files:"
+        if [ -d "test_output" ]; then
+          ls -la test_output/
+          if [ -n "$(ls -A test_output)" ]; then
+            echo "✅ Output files generated successfully"
+            for file in test_output/*; do
+              if [ -f "$file" ]; then
+                echo "📄 Generated: $(basename "$file") ($(du -h "$file" | cut -f1))"
+              fi
+            done
+          else
+            echo "❌ No output files generated"
+            exit 1
+          fi
+        else
+          echo "❌ Output directory not created"
+          exit 1
+        fi
+        
+    - name: Test trading halt error handling specifically
+      env:
+        DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      run: |
+        cat > test_error_handling.py << 'EOF'
+        import dart_fss as dart
+        import os
+        
+        api_key = os.environ.get('DART_API_KEY', '')
+        dart.set_api_key(api_key=api_key)
+        
+        print("🧪 Testing error handling improvements...")
+        
+        try:
+            corp_list = dart.get_corp_list()
+            print("✅ CorpList initialization completed without errors")
+            print("ℹ️  Trading halt site appears to be working normally")
+        except SystemExit as e:
+            print(f"❌ SystemExit occurred (this should not happen with our fix): {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            sys.exit(1)
+        
+        print("✅ Error handling test passed")
+        EOF
+        
+        python test_error_handling.py
+        
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-outputs
+        path: test_output/
+        retention-days: 7

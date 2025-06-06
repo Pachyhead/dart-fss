@@ -83,7 +83,7 @@ jobs:
       env:
         DART_API_KEY: ${{ secrets.DART_API_KEY }}
       run: |
-        python test_prac01.py 2>&1 | grep -v -E "(Loading|spinner|[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|\r|Loading Stock Market Information)" || true
+        echo "y" | python test_prac01.py 2>&1 | grep -v -E "(Loading|spinner|[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|\r|Loading Stock Market Information)" || true
         
     - name: Verify output files
       run: |

@@ -47,20 +47,23 @@ def get_trading_halt_list(corp_cls: str, include_corp_name=True) -> dict:
 
     trading_halt_list = dict()
 
-    resp = request.post(url=url, payload=payload, referer=referer)
-    html = BeautifulSoup(resp.text, 'html.parser')
-    rows = html.find_all('tr')
+    try:
+        resp = request.post(url=url, payload=payload, referer=referer)
+        html = BeautifulSoup(resp.text, 'html.parser')
+        rows = html.find_all('tr')
 
-    for row in rows:
-        cols = row.find_all('td')
-        if len(cols) > 0:
-            corp_name = cols[1].text.strip()
-            stock_code = cols[2].text.strip()
-            issue = cols[3].text.strip()
+        for row in rows:
+            cols = row.find_all('td')
+            if len(cols) > 0:
+                corp_name = cols[1].text.strip()
+                stock_code = cols[2].text.strip()
+                issue = cols[3].text.strip()
 
-            corp_info = {'issue': issue, 'corp_cls': corp_cls}
-            if include_corp_name:
-                corp_info['corp_name'] = corp_name
-            trading_halt_list[stock_code] = corp_info
+                corp_info = {'issue': issue, 'corp_cls': corp_cls}
+                if include_corp_name:
+                    corp_info['corp_name'] = corp_name
+                trading_halt_list[stock_code] = corp_info
+    except Exception as e:
+        raise e
 
     return trading_halt_list

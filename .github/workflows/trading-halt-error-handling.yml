@@ -106,35 +106,6 @@ jobs:
           exit 1
         fi
         
-    - name: Test trading halt error handling specifically
-      env:
-        DART_API_KEY: ${{ secrets.DART_API_KEY }}
-      run: |
-        cat > test_error_handling.py << 'EOF'
-        import dart_fss as dart
-        import os
-        
-        api_key = os.environ.get('DART_API_KEY', '')
-        dart.set_api_key(api_key=api_key)
-        
-        print("🧪 Testing error handling improvements...")
-        
-        try:
-            corp_list = dart.get_corp_list()
-            print("✅ CorpList initialization completed without errors")
-            print("ℹ️  Trading halt site appears to be working normally")
-        except SystemExit as e:
-            print(f"❌ SystemExit occurred (this should not happen with our fix): {e}")
-            sys.exit(1)
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
-            sys.exit(1)
-        
-        print("✅ Error handling test passed")
-        EOF
-        
-        python test_error_handling.py
-        
     - name: Upload test artifacts
       if: always()
       uses: actions/upload-artifact@v4

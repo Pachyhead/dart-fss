@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import os
 from typing import Union, List
 from dart_fss.utils import Singleton, Spinner
 from dart_fss.api.filings import get_corp_code
@@ -107,22 +108,28 @@ class CorpList(object, metaclass=Singleton):
                 spinner = Spinner('Loading Stock Market Information')  # 스피너 재시작
                 spinner.start()
             except Exception as e:
-                # 에러 발생 시 사용자에게 물어보기
-                print(f"\n[WARNING] 거래정지 목록 조회 실패 (Market: {k})")
-                print(f"오류 내용: {str(e)}")
-                print("KRX 웹사이트(https://kind.krx.co.kr)에 접속할 수 없습니다.")
-                
-                while True:
-                    user_input = input("모든 마켓의 거래정지 목록 조회를 건너뛰고 계속 진행하시겠습니까? (y/n): ").lower().strip()
-                    if user_input in ['y', 'yes']:
-                        print("거래정지 목록 조회를 건너뛰고 진행합니다.")
-                        skip_trading_halt = True
-                        break
-                    elif user_input in ['n', 'no']:
-                        print("프로그램을 종료합니다.")
-                        raise SystemExit("사용자 요청에 의해 프로그램을 종료합니다.")
-                    else:
-                        print("올바른 입력이 아닙니다. 'y' 또는 'n'을 입력해주세요.")
+                # CI 환경에서는 자동으로 skip
+                if os.environ.get('GITHUB_ACTIONS') == 'true':
+                    print(f"\n[INFO] CI 환경에서 거래정지 목록 조회 실패를 감지했습니다.")
+                    print("자동으로 거래정지 목록 조회를 건너뛰고 진행합니다.")
+                    skip_trading_halt = True
+                else:
+                    # 로컬 환경에서만 사용자 입력 받기
+                    print(f"\n[WARNING] 거래정지 목록 조회 실패 (Market: {k})")
+                    print(f"오류 내용: {str(e)}")
+                    print("KRX 웹사이트(https://kind.krx.co.kr)에 접속할 수 없습니다.")
+                    
+                    while True:
+                        user_input = input("모든 마켓의 거래정지 목록 조회를 건너뛰고 계속 진행하시겠습니까? (y/n): ").lower().strip()
+                        if user_input in ['y', 'yes']:
+                            print("거래정지 목록 조회를 건너뛰고 진행합니다.")
+                            skip_trading_halt = True
+                            break
+                        elif user_input in ['n', 'no']:
+                            print("프로그램을 종료합니다.")
+                            raise SystemExit("사용자 요청에 의해 프로그램을 종료합니다.")
+                        else:
+                            print("올바른 입력이 아닙니다. 'y' 또는 'n'을 입력해주세요.")
                 
                 spinner = Spinner('Loading Stock Market Information')  # 스피너 재시작
                 spinner.start()

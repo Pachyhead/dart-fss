@@ -79,11 +79,13 @@ jobs:
             sys.exit(1)
         EOF
         
-    - name: Run prac01.py test
+    - name: Run prac01.py test (CI environment auto-skip)
       env:
         DART_API_KEY: ${{ secrets.DART_API_KEY }}
+        GITHUB_ACTIONS: true  # 명시적으로 설정 (이미 자동으로 설정되지만)
       run: |
-        echo "y" | python test_prac01.py 2>&1 | grep -v -E "(Loading|spinner|[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|\r|Loading Stock Market Information)" || true
+        # CI 환경에서는 자동으로 거래정지 목록 조회를 건너뛰므로 사용자 입력 불필요
+        python test_prac01.py 2>&1 | grep -v -E "(Loading|spinner|[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|\r)" || true
         
     - name: Verify output files
       run: |

@@ -94,8 +94,17 @@ class CorpList(object, metaclass=Singleton):
         for k in ['Y', 'K', 'N']:
             data = get_stock_market_list(k, False)
             self._stock_market = {**self._stock_market, **data}
-            trading_halt = get_trading_halt_list(k, False)
-            self._trading_halt = {**self._trading_halt, **trading_halt}
+
+            try:
+                trading_halt = get_trading_halt_list(k, False)
+                self._trading_halt = {**self._trading_halt, **trading_halt}
+            except Exception as e:
+                spinner.stop()
+                print(f"\n[ERROR] 거래정지 목록 조회 실패 (Market: {k})")
+                print(f"오류 내용: {str(e)}")
+                print("KRX 웹사이트(https://kind.krx.co.kr)에 접속할 수 없습니다.")
+                print("네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.")
+                raise SystemExit("거래정지 목록 조회 실패로 인해 프로그램을 종료합니다.")
         spinner.stop()
 
         spinner = Spinner('Loading Companies in OpenDART')

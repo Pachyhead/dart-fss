@@ -38,48 +38,96 @@
 > 테스트 github action: https://github.com/Pachyhead/dart-fss/actions/runs/15510087027
 
 # How to Install & Run
-## 1단계: Docker 설치하기
-
-만약 Docker가 설치되어 있지 않다면, 먼저 Docker를 설치해야 합니다.
-
-* **Windows 또는 macOS 사용자:**
-    * [Docker Desktop 공식 다운로드 페이지](https://www.docker.com/products/docker-desktop/)에 접속하여 운영체제에 맞는 설치 파일을 다운로드하고 실행하여 설치를 완료합니다.
-* **Linux 사용자:**
-    * 각 배포판의 공식 문서에 따라 Docker를 설치합니다. (예: [Ubuntu Docker 설치 가이드](https://docs.docker.com/engine/install/ubuntu/))
-
-설치가 완료되면 터미널(Windows의 경우 PowerShell 또는 CMD, macOS/Linux의 경우 터미널)에서 다음 명령어를 입력하여 Docker가 정상적으로 설치되었는지 확인합니다.
-
-```bash
-docker --version
+## 1단계: tar 파일을 docker image로 로드
 ```
-Docker 버전 정보가 출력되면 정상적으로 설치된 것입니다.
+docker load -i final_2022040020.v1.tar
+```
+## 2단계: 로드된 image로부터 docker container 생성
+```
+docker run -dit -p [호스트 포트]:[컨테이너 포트] final_2022040020:v1
+```
+## 3단계: 생성된 docker container id 확인
+```
+docker ps -a
+```
+이후 final_2022040020:v1에 해당하는 id를 찾음
+## 4단계: docker container에 진입
+```
+docker exec -it {container id} /bin/bash
+```
+## 5단계: 홈 디렉토리에 진입
+```
+# cd ~
+```
+## 6단계: test.py 파일 실행
+```
+python3 test.py
+```
+이후 등장하는 "Error occurred during getting browser(s): random, but was suppressed with fallback." 메시지는 cli 환경에서 적절한 브라우저를 찾지 못해 발생하는 것으로 이후 동작에 영향을 주지 않음
+## 7단계: fsdata/ 디렉토리에 적절한 파일이 생성되었는지 확인
+test.py 파일에 따르면, is.json, bs.json ,cf.json, cis.json 파일이 생성되어 있어야 함
 
-## 2단계: 전달받은 Docker 이미지 불러오기
-전달받은 Docker 이미지 파일(예: dart-app.tar)을 로컬 Docker 환경으로 불러옵니다. 터미널에서 아래 명령어를 실행하세요. 이미지 파일이 있는 경로에서 실행하거나, 파일 경로를 정확히 지정해야 합니다.
+# Directory Structure
 ```
-docker load -i dart-app.tar
+.
+├── .github/                     # GitHub 관련 설정 폴더
+│   └── workflows/               # GitHub Actions 워크플로 설정
+│       └── test_all.yml         # 다양한 파이썬 버전에서 코드를 테스트하는 워크플로
+├── dart_fss/                    # 메인 라이브러리 소스 코드 패키지
+│   ├── __init__.py              # 패키지 초기화 및 주요 기능 노출
+│   ├── _version.py              # Git 태그를 기반으로 버전 정보를 관리
+│   ├── api/                     # Open DART API 인터페이스
+│   │   ├── __init__.py          # API 모듈을 패키지로 인식
+│   │   ├── filings/             # 공시 정보 관련 API (회사 정보, 문서 다운로드 등)
+│   │   ├── finance/             # 재무 정보 관련 API (XBRL 재무제표 등)
+│   │   ├── info/                # 사업보고서의 주요 정보 관련 API
+│   │   ├── issue/               # 발행 관련 주요사항 보고서 API
+│   │   ├── market/              # 시장 관련 API (상장, 거래정지 등)
+│   │   ├── registration/        # 증권신고서 관련 API
+│   │   ├── shareholder/         # 지분공시 종합 정보 API
+│   │   └── helper.py            # API 요청을 위한 헬퍼 함수
+│   ├── auth/                    # API 인증키 설정 및 관리
+│   │   └── auth.py              # API 키 설정 및 유효성 검증 로직
+│   ├── corp/                    # 회사 정보 관리
+│   │   ├── corp.py              # 개별 회사(Corp) 객체 정의
+│   │   └── corp_list.py         # 전체 회사 목록(CorpList) 관리 및 검색
+│   ├── errors/                  # 사용자 정의 에러
+│   │   ├── checker.py           # API 응답 상태를 확인하고 적절한 에러를 발생
+│   │   └── errors.py            # API 키 오류, 데이터 없음 등 사용자 정의 예외 클래스 정의
+│   ├── filings/                 # 공시(보고서) 검색 및 처리
+│   │   ├── pages.py             # 공시 보고서 내의 개별 페이지(Page) 객체 정의
+│   │   ├── reports.py           # 공시 보고서(Report) 객체 및 관련 파일/보고서 처리
+│   │   ├── search.py            # 공시 보고서 검색 기능
+│   │   ├── search_result.py     # 검색 결과를 담는 SearchResults 객체 정의
+│   │   └── xbrl_viewer.py       # DART XBRL 뷰어 페이지 처리
+│   ├── fs/                      # 재무제표 추출 및 표현
+│   │   ├── extract.py           # 재무제표 추출 로직
+│   │   └── fs.py                # 추출된 재무제표를 담는 FinancialStatement 객체 정의
+│   ├── tests/                   # 라이브러리 테스트 코드
+│   │   ├── test_api_filings.py  # 공시 정보 API 테스트
+│   │   ├── test_corp.py         # 회사 정보 관련 기능 테스트
+│   │   └── test_fs.py           # 재무제표 추출 기능 테스트
+│   ├── utils/                   # 공통 유틸리티 함수
+│   │   ├── cache.py             # 캐시 데코레이터
+│   │   ├── file.py              # 파일 처리(압축 해제, 폴더 생성 등) 유틸리티
+│   │   ├── request.py           # HTTP 요청을 보내기 위한 클래스
+│   │   └── string.py            # 문자열 처리(비교, 단위 변환 등) 유틸리티
+│   └── xbrl/                    # XBRL 데이터 파싱 및 처리
+│       ├── dart_xbrl.py         # XBRL 문서를 관리하는 DartXbrl 객체 정의
+│       └── xbrl.py              # XBRL 파일 로딩 함수
+├── docs/                        # 문서화 관련 파일
+│   ├── conf.py                  # Sphinx 문서 생성기 설정 파일
+│   ├── requirements.txt         # 문서 생성을 위한 의존성 목록
+│   └── *.rst                    # reStructuredText 형식의 문서 소스 파일
+├── fsdata/                      # test.py 실행 후 결과 파일이 저장되는 폴더
+├── test.py                      # test 시 사용할 임시 파일       
+├── .readthedocs.yml             # Read the Docs 빌드 설정 파일
+├── conftest.py                  # Pytest 테스트 환경 설정 파일
+├── README.md                    # 프로젝트 개요 및 설치/사용법 안내
+├── requirements.txt             # 프로젝트 실행에 필요한 라이브러리 목록
+├── setup.cfg                    # 패키지 설정 파일 (versioneer 등)
+├── setup.py                     # 패키지 설치 및 배포 스크립트
+└── versioneer.py                # Git 태그를 이용해 버전 번호를 관리하는 도구
 ```
 
-```
-dart_fss/
-├── __init__.py        # dart_fss 패키지의 진입점, 주요 기능 노출
-├── _version.py        # versioneer를 통해 관리되는 라이브러리 버전 정보
-├── api/               # Open DART API와의 상호작용 관리
-│   ├── filings/       #   └ 공시 정보 API
-│   ├── finance/       #   └ 재무 정보 API
-│   ├── info/          #   └ 사업보고서 주요 정보 API
-│   ├── issue/         #   └ 주요사항보고서 API (발행 관련)
-│   ├── market/        #   └ 시장 관련 API (상장, 거래정지 등)
-│   ├── registration/  #   └ 증권신고서 API
-│   └── shareholder/   #   └ 지분공시 종합 정보 API
-├── auth/              # Open DART API 인증키 설정 및 관리
-├── corp/              # 회사(종목) 정보 표현 및 관리
-├── errors/            # 라이브러리 내 사용자 정의 오류 클래스 정의
-├── filings/           # 회사 공시(보고서) 검색 및 처리
-├── fs/                # 재무제표 추출 및 표현
-├── tests/             # 라이브러리 기능 및 정확성 검증을 위한 테스트 스크립트
-├── utils/             # 라이브러리 전반에서 사용되는 공통 유틸리티 함수 모음
-└── xbrl/              # XBRL(재무보고용 국제표준 전산언어) 데이터 파싱 및 처리
-```
 
-Error occurred during getting browser(s): random, but was suppressed with fallback.

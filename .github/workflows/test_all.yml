@@ -1,0 +1,305 @@
+name: Test Target Unit Functionality
+
+on:
+  push:
+    branches: [ main, develop, feat/*, fix/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # 수동 실행 허용
+
+jobs:
+  test-target-unit:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        
+    - name: Create test directory
+      run: |
+        mkdir -p test_output
+        
+    - name: Create target unit test script
+      env:
+        DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      run: |
+        cat > test_target_units.py << 'EOF'
+        import dart_fss as dart
+        import os
+        import sys
+        import json
+        import time
+        
+        # GitHub Secrets에서 API 키 가져오기
+        api_key = os.environ.get('DART_API_KEY', '')
+        if not api_key:
+            print("❌ No API key provided")
+            sys.exit(1)
+            
+        print("🔑 Setting API key...")
+        dart.set_api_key(api_key=api_key)
+        
+        # 테스트할 단위들 정의
+        valid_units = ['원', '십원', '백원', '천원', '만원', '십만원', '백만원', '천만원', '억원']
+        invalid_units = ['십억원', '조원', '무효단위', '달러']
+        
+        test_results = {
+            'valid_tests': {},
+            'invalid_tests': {},
+            'errors': []
+        }
+        
+        try:
+            print("📋 Loading corporation list...")
+            corp_list = dart.get_corp_list()
+            print("✅ Corporation list loaded successfully")
+            
+            print("🔍 Searching for Samsung Electronics...")
+            samsung = corp_list.find_by_corp_name('삼성전자', exactly=True)[0]
+            print(f"✅ Samsung Electronics found: {samsung.corp_name}")
+            
+            # 유효한 단위들 테스트
+            print("\n🧪 Testing valid units...")
+            for unit in valid_units:
+                try:
+                    print(f"  📊 Testing unit: {unit}")
+                    
+                    # 재무제표 추출
+                    fs = samsung.extract_fs(bgn_de='20240101', target_unit=unit)
+                    print(f"    ✅ Extract successful for {unit}")
+                    
+                    # JSON 파일로 저장
+                    filename = f"test_{unit.replace('원', 'won')}.json"
+                    saved_files = fs.save(filename=filename, path='test_output')
+                    print(f"    ✅ Save successful for {unit}")
+                    
+                    # 저장된 파일 확인
+                    if saved_files and len(saved_files) > 0:
+                        print(f"    📄 Generated {len(saved_files)} files")
+                        
+                        # 첫 번째 파일의 내용 확인
+                        if saved_files[0].endswith('.json'):
+                            with open(saved_files[0], 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                target_unit_info = data.get('info', {}).get('target_unit', 'Not found')
+                                print(f"    📋 Target unit in file: {target_unit_info}")
+                    
+                    test_results['valid_tests'][unit] = {
+                        'status': 'success',
+                        'files_generated': len(saved_files) if saved_files else 0
+                    }
+                    
+                    # 메모리 정리를 위한 잠시 대기
+                    time.sleep(1)
+                    
+                except Exception as e:
+                    error_msg = f"Failed to process unit {unit}: {str(e)}"
+                    print(f"    ❌ {error_msg}")
+                    test_results['valid_tests'][unit] = {
+                        'status': 'failed',
+                        'error': str(e)
+                    }
+                    test_results['errors'].append(error_msg)
+            
+            # 무효한 단위들 테스트 (ValueError 발생 확인)
+            print("\n🚫 Testing invalid units...")
+            for unit in invalid_units:
+                try:
+                    print(f"  🧪 Testing invalid unit: {unit}")
+                    
+                    # 이 부분에서 ValueError가 발생해야 함
+                    fs = samsung.extract_fs(bgn_de='20240101', target_unit=unit)
+                    
+                    # 여기까지 오면 안됨 (에러가 발생하지 않음)
+                    error_msg = f"ERROR: {unit} should have raised ValueError but didn't"
+                    print(f"    ❌ {error_msg}")
+                    test_results['invalid_tests'][unit] = {
+                        'status': 'unexpected_success',
+                        'error': 'Should have failed but succeeded'
+                    }
+                    test_results['errors'].append(error_msg)
+                    
+                except ValueError as e:
+                    # 예상된 에러 - 정상
+                    print(f"    ✅ Correctly rejected {unit}: {str(e)}")
+                    test_results['invalid_tests'][unit] = {
+                        'status': 'correctly_rejected',
+                        'error_message': str(e)
+                    }
+                    
+                except Exception as e:
+                    # 예상하지 못한 에러
+                    error_msg = f"Unexpected error for {unit}: {str(e)}"
+                    print(f"    ❌ {error_msg}")
+                    test_results['invalid_tests'][unit] = {
+                        'status': 'unexpected_error',
+                        'error': str(e)
+                    }
+                    test_results['errors'].append(error_msg)
+            
+            # 결과 요약
+            print("\n📊 Test Summary:")
+            valid_success = sum(1 for result in test_results['valid_tests'].values() 
+                              if result['status'] == 'success')
+            invalid_success = sum(1 for result in test_results['invalid_tests'].values() 
+                                if result['status'] == 'correctly_rejected')
+            
+            print(f"  ✅ Valid units successful: {valid_success}/{len(valid_units)}")
+            print(f"  ✅ Invalid units correctly rejected: {invalid_success}/{len(invalid_units)}")
+            print(f"  ❌ Total errors: {len(test_results['errors'])}")
+            
+            # 결과를 JSON 파일로 저장
+            with open('test_output/test_results.json', 'w', encoding='utf-8') as f:
+                json.dump(test_results, f, ensure_ascii=False, indent=2)
+            
+            # 에러가 있으면 실패로 처리
+            if test_results['errors']:
+                print("\n❌ Test failed with errors:")
+                for error in test_results['errors']:
+                    print(f"  • {error}")
+                sys.exit(1)
+            else:
+                print("\n🎉 All tests completed successfully!")
+                
+        except SystemExit as e:
+            if 'trading halt' in str(e).lower() or '거래정지' in str(e):
+                print("❌ Trading halt error handling test failed")
+                print(f"Error: {e}")
+                sys.exit(1)
+            else:
+                raise  # 다른 SystemExit은 그대로 전파
+        except Exception as e:
+            print(f"❌ Unexpected error occurred: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+        EOF
+        
+    - name: Run target unit tests
+      env:
+        DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      run: |
+        python test_target_units.py 2>&1 | grep -v -E "(Loading|spinner|[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]|\r|Loading Stock Market Information)" || true
+        
+    - name: Verify test results
+      run: |
+        echo "📁 Checking test results:"
+        if [ -f "test_output/test_results.json" ]; then
+          echo "✅ Test results file generated"
+          echo "📋 Test results summary:"
+          python -c "
+        import json
+        with open('test_output/test_results.json', 'r', encoding='utf-8') as f:
+            results = json.load(f)
+        
+        print(f'Valid units tested: {len(results[\"valid_tests\"])}')
+        print(f'Invalid units tested: {len(results[\"invalid_tests\"])}')
+        print(f'Total errors: {len(results[\"errors\"])}')
+        
+        valid_success = sum(1 for r in results['valid_tests'].values() if r['status'] == 'success')
+        invalid_success = sum(1 for r in results['invalid_tests'].values() if r['status'] == 'correctly_rejected')
+        
+        print(f'Valid units success rate: {valid_success}/{len(results[\"valid_tests\"])}')
+        print(f'Invalid units rejection rate: {invalid_success}/{len(results[\"invalid_tests\"])}')
+        
+        if results['errors']:
+            print('❌ Errors found:')
+            for error in results['errors']:
+                print(f'  • {error}')
+            exit(1)
+        else:
+            print('✅ All tests passed!')
+          "
+        else
+          echo "❌ Test results file not generated"
+          exit 1
+        fi
+        
+    - name: Verify generated files
+      run: |
+        echo "📁 Checking generated JSON files:"
+        if [ -d "test_output" ]; then
+          ls -la test_output/
+          
+          json_count=$(find test_output -name "*.json" -not -name "test_results.json" | wc -l)
+          echo "📄 Generated JSON files: $json_count"
+          
+          if [ $json_count -gt 0 ]; then
+            echo "✅ Financial statement files generated successfully"
+            for file in test_output/*.json; do
+              if [ -f "$file" ] && [ "$(basename "$file")" != "test_results.json" ]; then
+                size=$(du -h "$file" | cut -f1)
+                echo "📄 $(basename "$file"): $size"
+                
+                # JSON 파일 유효성 검사
+                if python -c "import json; json.load(open('$file', 'r', encoding='utf-8'))" 2>/dev/null; then
+                  echo "  ✅ Valid JSON"
+                else
+                  echo "  ❌ Invalid JSON"
+                  exit 1
+                fi
+              fi
+            done
+          else
+            echo "❌ No financial statement JSON files generated"
+            exit 1
+          fi
+        else
+          echo "❌ Output directory not created"
+          exit 1
+        fi
+        
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: target-unit-test-outputs-py${{ matrix.python-version }}
+        path: test_output/
+        retention-days: 7
+        
+    - name: Display test summary
+      if: always()
+      run: |
+        echo "🎯 Target Unit Test Summary for Python ${{ matrix.python-version }}:"
+        echo "=================================="
+        if [ -f "test_output/test_results.json" ]; then
+          python -c "
+        import json
+        try:
+            with open('test_output/test_results.json', 'r', encoding='utf-8') as f:
+                results = json.load(f)
+            
+            print('📊 Detailed Results:')
+            print()
+            print('✅ Valid Units:')
+            for unit, result in results['valid_tests'].items():
+                status = '✅' if result['status'] == 'success' else '❌'
+                print(f'  {status} {unit}: {result[\"status\"]}')
+            
+            print()
+            print('🚫 Invalid Units:')
+            for unit, result in results['invalid_tests'].items():
+                status = '✅' if result['status'] == 'correctly_rejected' else '❌'
+                print(f'  {status} {unit}: {result[\"status\"]}')
+                
+        except Exception as e:
+            print(f'Error reading test results: {e}')
+          "
+        else
+          echo "❌ No test results available"
+        fi

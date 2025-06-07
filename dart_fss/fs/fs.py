@@ -27,7 +27,9 @@ class FinancialStatement(object):
 
         target_unit = info.get('target_unit', '원')
         if target_unit != '원':
-            # target_unit에 맞춰 statements 내 데이터 수정 
+            # target_unit에 맞춰 statements 내 데이터 수정
+            statements = self._convert_statements_unit(statements, target_unit)
+        
         self._statements = statements
         # Fix order
         self._order = [tp for tp in ('bs', 'is', 'cis', 'cf') if tp in self._statements]
@@ -293,9 +295,13 @@ class FinancialStatement(object):
             for column in df.columns:
                 if self._is_numeric_column(df[column]): 
                    # 원 단위 기준 데이터를 target_unit으로 변환
-                   # pandas braodcast 연산을 사용하여 column 내 모든 값에 대해 변환 적용
+                   # pandas broadcast 연산을 사용하여 column 내 모든 값에 대해 변환 적용
                    converted_df[column] = df[column] / target_multiplier
-                     
+            
+            # 컬럼 헤더의 단위 정보도 업데이트
+            converted_df = self._update_column_headers(converted_df, target_unit)
+            converted_statements[fs_type] = converted_df
+             
         return converted_statements
 
     def _is_numeric_column(self, series) -> bool:
@@ -318,3 +324,28 @@ class FinancialStatement(object):
         if series.name and date_pattern.search(str(series.name[0])):
             return True
         return False
+
+    def _update_column_headers(self, df: DataFrame, target_unit: str) -> DataFrame:
+        """컬럼 헤더의 단위 정보를 target_unit으로 업데이트"""
+        if df is None or df.empty:
+            return df
+        
+        new_columns = []
+        for column in df.columns:
+            if len(column) > 0 and isinstance(column[0], str):
+                # 기존 단위 정보를 새로운 단위로 교체
+                header = column[0]
+                # (Unit: 천원) -> (Unit: 백만원) 형태로 변경
+                import re
+                unit_pattern = re.compile(r'\(Unit:\s*[^)]+\)')
+                if unit_pattern.search(header):
+                    new_header = unit_pattern.sub(f'(Unit: {target_unit})', header)
+                    new_column = tuple([new_header] + list(column[1:]))
+                else:
+                    new_column = column
+            else:
+                new_column = column
+            new_columns.append(new_column)
+        
+        df.columns = pd.MultiIndex.from_tuples(new_columns)
+        return df

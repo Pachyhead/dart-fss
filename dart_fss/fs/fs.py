@@ -24,6 +24,12 @@ class FinancialStatement(object):
             pd.options.display.float_format = '{:,}'.format
         else:
             pd.options.display.float_format = '{:}'.format
+
+        target_unit = info.get('target_unit', '원')
+        if target_unit != '원':
+            # target_unit에 맞춰 statements 내 데이터 수정
+            statements = self._convert_statements_unit(statements, target_unit)
+        
         self._statements = statements
         # Fix order
         self._order = [tp for tp in ('bs', 'is', 'cis', 'cf') if tp in self._statements]
@@ -141,7 +147,6 @@ class FinancialStatement(object):
         import os
         import json
 
-        import pdb; pdb.set_trace()
         if path is None:
             path = os.getcwd()
             path = os.path.join(path, "fsdata")
@@ -154,32 +159,44 @@ class FinancialStatement(object):
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.json':
-            # JSON 형식으로 각 재무제표 유형별 개별 파일 저장
-            base_name = os.path.splitext(filename)[0]  # 확장자 제거
+            base_name = os.path.splitext(filename)[0]
             saved_files = []
-
+            
             for tp in self._statements:
                 fs = self._statements[tp]
                 label = self._labels.get(tp)
-
-                # 데이터나 레이블이 하나라도 있는 경우에만 파일 생성
+                
                 if fs is not None or label is not None:
                     tp_filename = f"{base_name}_{tp}.json"
                     tp_file_path = os.path.join(path, tp_filename)
-
-                    # 각 재무제표 유형별 데이터 구성
+                    
+                    # MultiIndex 컬럼을 문자열로 변환
+                    statement_data = None
+                    if fs is not None:
+                        fs_copy = fs.copy()
+                        # tuple 컬럼을 문자열로 변환
+                        fs_copy.columns = [str(col) for col in fs_copy.columns]
+                        statement_data = fs_copy.to_dict(orient='records')
+                    
+                    label_data = None
+                    if label is not None:
+                        label_copy = label.copy()
+                        # tuple 컬럼을 문자열로 변환
+                        label_copy.columns = [str(col) for col in label_copy.columns]
+                        label_data = label_copy.to_dict(orient='records')
+                    
                     data_to_save = {
                         "info": self.info,
                         "statement_type": tp,
-                        "statement_data": fs.to_dict(orient='split') if fs is not None else None,
-                        "label_data": label.to_dict(orient='split') if label is not None else None
+                        "statement_data": statement_data,
+                        "label_data": label_data
                     }
-
-                with open(tp_file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-
-                saved_files.append(tp_file_path)
-
+                    
+                    with open(tp_file_path, 'w', encoding='utf-8') as f:
+                        json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+                    
+                    saved_files.append(tp_file_path)
+        
             return saved_files
         else:
             with pd.ExcelWriter(file_path) as writer:
@@ -258,3 +275,77 @@ class FinancialStatement(object):
         keys.pop('financial statement')
         dirs.extend(keys)
         return dirs
+
+    def _convert_statements_unit(self, statements: Dict[str, DataFrame], target_unit: str) -> Dict[str, DataFrame]:
+        """모든 재무제표 데이터를 target_unit으로 변환"""
+        from dart_fss.utils import str_unit_to_number_unit
+        
+        # 목표 단위의 승수 계산
+        target_multiplier = str_unit_to_number_unit(target_unit)
+        
+        converted_statements = {}
+        for fs_type, df in statements.items():
+            if df is None:
+                converted_statements[fs_type] = None
+                continue
+                
+            converted_df = df.copy()
+            
+            # 숫자 컬럼들을 찾아서 변환
+            for column in df.columns:
+                if self._is_numeric_column(df[column]): 
+                   # 원 단위 기준 데이터를 target_unit으로 변환
+                   # pandas broadcast 연산을 사용하여 column 내 모든 값에 대해 변환 적용
+                   converted_df[column] = df[column] / target_multiplier
+            
+            # 컬럼 헤더의 단위 정보도 업데이트
+            converted_df = self._update_column_headers(converted_df, target_unit)
+            converted_statements[fs_type] = converted_df
+             
+        return converted_statements
+
+    def _is_numeric_column(self, series) -> bool:
+        # label_ko, comment, concept_id, class* column 제외
+        if series.name and len(series.name) > 1:
+            column_name = series.name[1]
+            if isinstance(column_name, str):
+                # 메타데이터 컬럼들 제외
+                excluded_columns = ['label_ko', 'comment', 'concept_id']
+                if column_name in excluded_columns:
+                    return False
+
+                # class로 시작하는 컬럼들도 제외 (class0, class1, class2, ...)
+                if column_name.startswith('class'):
+                    return False
+
+        # 날짜 패턴이 있는 컬럼만 변환 (실제 재무 데이터)
+        import re
+        date_pattern = re.compile(r'\d{8}')
+        if series.name and date_pattern.search(str(series.name[0])):
+            return True
+        return False
+
+    def _update_column_headers(self, df: DataFrame, target_unit: str) -> DataFrame:
+        """컬럼 헤더의 단위 정보를 target_unit으로 업데이트"""
+        if df is None or df.empty:
+            return df
+        
+        new_columns = []
+        for column in df.columns:
+            if len(column) > 0 and isinstance(column[0], str):
+                # 기존 단위 정보를 새로운 단위로 교체
+                header = column[0]
+                # (Unit: 천원) -> (Unit: 백만원) 형태로 변경
+                import re
+                unit_pattern = re.compile(r'\(Unit:\s*[^)]+\)')
+                if unit_pattern.search(header):
+                    new_header = unit_pattern.sub(f'(Unit: {target_unit})', header)
+                    new_column = tuple([new_header] + list(column[1:]))
+                else:
+                    new_column = column
+            else:
+                new_column = column
+            new_columns.append(new_column)
+        
+        df.columns = pd.MultiIndex.from_tuples(new_columns)
+        return df

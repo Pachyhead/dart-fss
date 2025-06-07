@@ -211,6 +211,7 @@ class Corp(object):
                    report_tp: str = 'annual',
                    lang: str = 'ko',
                    separator: bool = True,
+                   target_unit: str = '원',
                    dataset: str = 'xbrl',
                    cumulative: bool = False,
                    progressbar: bool = True,
@@ -236,6 +237,8 @@ class Corp(object):
             'ko' 한글, 'en' 영문
         separator: bool, optional
             1000단위 구분자 표시 여부
+        target_unit: str, optional
+            출력 단위 ('원', '천원', '만원', '백만원', '억원' 등)
         dataset: str, optional
            'xbrl': xbrl 파일 우선 데이터 추출, 'web': web page 우선 데이터 추출(default: 'xbrl')
         cumulative: bool, optional
@@ -253,6 +256,20 @@ class Corp(object):
         -------
         FinancialStatement
             제무제표 검색 결과
+        
+        Raises
+        ------
+        ValueError
+            지원하지 않는 target_unit 입력 시
          """
+        # target_unit 유효성 검증
+        valid_units = {'원', '십원', '백원', '천원', '만원', '십만원', '백만원', '천만원', '억원'}
+        
+        if target_unit not in valid_units:
+            raise ValueError(
+                f"지원하지 않는 단위입니다: '{target_unit}'\n"
+                f"지원 단위: {', '.join(sorted(valid_units, key=lambda x: len(x)))}"
+            )
+        
         return extract(self.corp_code, bgn_de, end_de, fs_tp, separate, report_tp, lang,
-                       separator, dataset, cumulative, progressbar, skip_error, last_report_only, min_required)
+                       separator, target_unit, dataset, cumulative, progressbar, skip_error, last_report_only, min_required)

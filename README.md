@@ -38,6 +38,19 @@
 > 테스트 github action: https://github.com/Pachyhead/dart-fss/actions/runs/15510087027
 
 # How to Install & Run
+### 1단계: Docker 설치하기
+
+만약 Docker가 설치되어 있지 않다면, 먼저 Docker를 설치해야 합니다.
+
+* **Windows 또는 macOS 사용자:**
+    * [Docker Desktop 공식 다운로드 페이지](https://www.docker.com/products/docker-desktop/)에 접속하여 운영체제에 맞는 설치 파일을 다운로드하고 실행하여 설치를 완료합니다.
+* **Linux 사용자:**
+    * 각 배포판의 공식 문서에 따라 Docker를 설치합니다. (예: [Ubuntu Docker 설치 가이드](https://docs.docker.com/engine/install/ubuntu/))
+
+설치가 완료되면 터미널(Windows의 경우 PowerShell 또는 CMD, macOS/Linux의 경우 터미널)에서 다음 명령어를 입력하여 Docker가 정상적으로 설치되었는지 확인합니다.
+
+```bash
+docker --version
 Error occurred during getting browser(s): random, but was suppressed with fallback.
 
 ### Directory Structure

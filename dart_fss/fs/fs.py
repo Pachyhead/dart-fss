@@ -154,32 +154,44 @@ class FinancialStatement(object):
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.json':
-            # JSON 형식으로 각 재무제표 유형별 개별 파일 저장
-            base_name = os.path.splitext(filename)[0]  # 확장자 제거
+            base_name = os.path.splitext(filename)[0]
             saved_files = []
-
+            
             for tp in self._statements:
                 fs = self._statements[tp]
                 label = self._labels.get(tp)
-
-                # 데이터나 레이블이 하나라도 있는 경우에만 파일 생성
+                
                 if fs is not None or label is not None:
                     tp_filename = f"{base_name}_{tp}.json"
                     tp_file_path = os.path.join(path, tp_filename)
-
-                    # 각 재무제표 유형별 데이터 구성
+                    
+                    # MultiIndex 컬럼을 문자열로 변환
+                    statement_data = None
+                    if fs is not None:
+                        fs_copy = fs.copy()
+                        # tuple 컬럼을 문자열로 변환
+                        fs_copy.columns = [str(col) for col in fs_copy.columns]
+                        statement_data = fs_copy.to_dict(orient='records')
+                    
+                    label_data = None
+                    if label is not None:
+                        label_copy = label.copy()
+                        # tuple 컬럼을 문자열로 변환
+                        label_copy.columns = [str(col) for col in label_copy.columns]
+                        label_data = label_copy.to_dict(orient='records')
+                    
                     data_to_save = {
                         "info": self.info,
                         "statement_type": tp,
-                        "statement_data": fs.to_dict(orient='split') if fs is not None else None,
-                        "label_data": label.to_dict(orient='split') if label is not None else None
+                        "statement_data": statement_data,
+                        "label_data": label_data
                     }
-
-                with open(tp_file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-
-                saved_files.append(tp_file_path)
-
+                    
+                    with open(tp_file_path, 'w', encoding='utf-8') as f:
+                        json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+                    
+                    saved_files.append(tp_file_path)
+        
             return saved_files
         else:
             with pd.ExcelWriter(file_path) as writer:

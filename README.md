@@ -55,6 +55,11 @@ docker --version
 Docker 버전 정보가 출력되면 정상적으로 설치된 것입니다.
 
 ## 2단계: 전달받은 Docker 이미지 불러오기
+전달받은 Docker 이미지 파일(예: dart-app.tar)을 로컬 Docker 환경으로 불러옵니다. 터미널에서 아래 명령어를 실행하세요. 이미지 파일이 있는 경로에서 실행하거나, 파일 경로를 정확히 지정해야 합니다.
+```
+docker load -i dart-app.tar
+```
+
 ```
 dart_fss/
 ├── __init__.py        # dart_fss 패키지의 진입점, 주요 기능 노출

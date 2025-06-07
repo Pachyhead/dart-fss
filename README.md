@@ -16,6 +16,14 @@
     - 문제 시점에서 테스트한 Github Action: https://github.com/Pachyhead/dart-fss/actions/runs/15497416263
 
 # Requirements
+#### 운영체제
+- ubuntu-latest: Ubuntu 24.04 (2025.06.08 기준) 
+  - 소스: https://github.com/actions/runner-images
+ 
+#### 파이썬 버전
+- 3.9, 3.10, 3.11
+ 
+#### 파이썬 라이브러리
 - xmltodict
 - requests
 - arelle-release
@@ -26,6 +34,8 @@
 - fake-useragent>=1.5
 - beautifulsoup4
 - appdirs
+
+> 테스트 github action: https://github.com/Pachyhead/dart-fss/actions/runs/15510087027
 
 # How to Install & Run
 

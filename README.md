@@ -38,6 +38,7 @@
 > 테스트 github action: https://github.com/Pachyhead/dart-fss/actions/runs/15510087027
 
 # How to Install & Run
+Error occurred during getting browser(s): random, but was suppressed with fallback.
 
 ### Directory Structure
 ```

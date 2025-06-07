@@ -91,11 +91,41 @@ class CorpList(object, metaclass=Singleton):
         # Loading Stock Market Information
         spinner = Spinner('Loading Stock Market Information')
         spinner.start()
+
+        skip_trading_halt = False
+
         for k in ['Y', 'K', 'N']:
             data = get_stock_market_list(k, False)
             self._stock_market = {**self._stock_market, **data}
-            trading_halt = get_trading_halt_list(k, False)
-            self._trading_halt = {**self._trading_halt, **trading_halt}
+
+        # 거래정지 목록 조회 (이전에 건너뛰기로 선택했으면 패스)
+        if not skip_trading_halt:
+            try:
+                spinner.stop()  # 사용자 입력을 받기 전에 스피너 중지
+                trading_halt = get_trading_halt_list(k, False)
+                self._trading_halt = {**self._trading_halt, **trading_halt}
+                spinner = Spinner('Loading Stock Market Information')  # 스피너 재시작
+                spinner.start()
+            except Exception as e:
+                # 에러 발생 시 사용자에게 물어보기
+                print(f"\n[WARNING] 거래정지 목록 조회 실패 (Market: {k})")
+                print(f"오류 내용: {str(e)}")
+                print("KRX 웹사이트(https://kind.krx.co.kr)에 접속할 수 없습니다.")
+                
+                while True:
+                    user_input = input("모든 마켓의 거래정지 목록 조회를 건너뛰고 계속 진행하시겠습니까? (y/n): ").lower().strip()
+                    if user_input in ['y', 'yes']:
+                        print("거래정지 목록 조회를 건너뛰고 진행합니다.")
+                        skip_trading_halt = True
+                        break
+                    elif user_input in ['n', 'no']:
+                        print("프로그램을 종료합니다.")
+                        raise SystemExit("사용자 요청에 의해 프로그램을 종료합니다.")
+                    else:
+                        print("올바른 입력이 아닙니다. 'y' 또는 'n'을 입력해주세요.")
+                
+                spinner = Spinner('Loading Stock Market Information')  # 스피너 재시작
+                spinner.start()
         spinner.stop()
 
         spinner = Spinner('Loading Companies in OpenDART')

@@ -10,7 +10,10 @@
   - 관련 이슈: https://github.com/Pachyhead/dart-fss/issues/2
 - KRX 사이트가 다운된 경우, 크롤링 과정에서 거래정지 목록을 조회하는데 실패하고 프로그램이 예상치 못하게 종료되는 문제를 개선
   - 사용자 입력을 통해 거래정지 목록 조회 과정을 SKIP하고 진행할지 여부 선택
-  - 관련 이슈: https://github.com/Pachyhead/dart-fss/issues/3
+  - 참고: 현재는 KRX 사이트의 문제가 해결되어 정상적으로 거래정지 목록을 조회함.
+    - 발생 이력: https://github.com/josw123/dart-fss/issues/193
+    - 개인 이슈 트래킹: https://github.com/Pachyhead/dart-fss/issues/3
+    - 문제 시점에서 테스트한 Github Action: https://github.com/Pachyhead/dart-fss/actions/runs/15497416263
 
 # Requirements
 - xmltodict

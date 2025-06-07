@@ -141,7 +141,6 @@ class FinancialStatement(object):
         import os
         import json
 
-        import pdb; pdb.set_trace()
         if path is None:
             path = os.getcwd()
             path = os.path.join(path, "fsdata")

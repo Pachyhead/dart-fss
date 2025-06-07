@@ -38,7 +38,7 @@
 > 테스트 github action: https://github.com/Pachyhead/dart-fss/actions/runs/15510087027
 
 # How to Install & Run
-### 1단계: Docker 설치하기
+## 1단계: Docker 설치하기
 
 만약 Docker가 설치되어 있지 않다면, 먼저 Docker를 설치해야 합니다.
 
@@ -51,9 +51,10 @@
 
 ```bash
 docker --version
-Error occurred during getting browser(s): random, but was suppressed with fallback.
+```
+Docker 버전 정보가 출력되면 정상적으로 설치된 것입니다.
 
-### Directory Structure
+## 2단계: 전달받은 Docker 이미지 불러오기
 ```
 dart_fss/
 ├── __init__.py        # dart_fss 패키지의 진입점, 주요 기능 노출
@@ -75,3 +76,5 @@ dart_fss/
 ├── utils/             # 라이브러리 전반에서 사용되는 공통 유틸리티 함수 모음
 └── xbrl/              # XBRL(재무보고용 국제표준 전산언어) 데이터 파싱 및 처리
 ```
+
+Error occurred during getting browser(s): random, but was suppressed with fallback.

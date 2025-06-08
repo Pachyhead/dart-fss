@@ -71,6 +71,7 @@ test.py 파일에 따르면, is.json, bs.json ,cf.json, cis.json 파일이 생�
 ```
 exit
 ```
+컨테이너 내부의 프롬프트에서 위의 명령어를 입력
 
 # Directory Structure
 ```

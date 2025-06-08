@@ -55,9 +55,9 @@ docker ps
 ```
 docker exec -it <container id> /bin/bash
 ```
-## 5단계: 홈 디렉토리에 진입
+## 5단계: 프로젝트 디렉토리로 이동
 ```
-# cd ~
+# cd ~/dart-fss
 ```
 ## 6단계: test.py 파일 실행
 ```
@@ -65,13 +65,18 @@ python3 test.py
 ```
 이후 등장하는 "Error occurred during getting browser(s): random, but was suppressed with fallback." 메시지는 cli 환경에서 적절한 브라우저를 찾지 못해 발생하는 것으로 이후 동작에 영향을 주지 않음
 ## 7단계: fsdata/ 디렉토리에 적절한 파일이 생성되었는지 확인
-test.py 파일에 따르면, is.json, bs.json ,cf.json, cis.json 파일이 생성되어 있어야 함
+- test.py 파일에 따르면, 100_bs.json, 100_cf.json, 100_cis.json, 100_is.json 파일이 생성되어 있어야 함
+- 해당 파일이 존재하고, 파일을 열어보았을 때 info에 target_unit이 백만원으로 표기되어 있다면 정상적으로 동작한 것임
 
 ## 8단계: 실행 종료 및 컨테이너 나오기
 ```
 exit
 ```
 컨테이너 내부의 프롬프트에서 위의 명령어를 입력
+## 9단계: 컨테이너 종료
+```
+docker stop <container id>
+```
 
 # Directory Structure
 ```

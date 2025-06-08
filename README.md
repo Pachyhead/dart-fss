@@ -69,7 +69,7 @@ test.py 파일에 따르면, is.json, bs.json ,cf.json, cis.json 파일이 생�
 
 ## 8단계: 실행 종료 및 컨테이너 나오기
 ```
-q 입력
+exit
 ```
 
 # Directory Structure

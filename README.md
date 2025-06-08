@@ -44,16 +44,16 @@ docker load -i final_2022040020.v1.tar
 ```
 ## 2단계: 로드된 image로부터 docker container 생성
 ```
-docker run -dit -p [호스트 포트]:[컨테이너 포트] final_2022040020:v1
+docker run -dit final_2022040020:v1
 ```
 ## 3단계: 생성된 docker container id 확인
 ```
-docker ps -a
+docker ps
 ```
 이후 final_2022040020:v1에 해당하는 id를 찾음
 ## 4단계: docker container에 진입
 ```
-docker exec -it {container id} /bin/bash
+docker exec -it <container id> /bin/bash
 ```
 ## 5단계: 홈 디렉토리에 진입
 ```
@@ -66,6 +66,11 @@ python3 test.py
 이후 등장하는 "Error occurred during getting browser(s): random, but was suppressed with fallback." 메시지는 cli 환경에서 적절한 브라우저를 찾지 못해 발생하는 것으로 이후 동작에 영향을 주지 않음
 ## 7단계: fsdata/ 디렉토리에 적절한 파일이 생성되었는지 확인
 test.py 파일에 따르면, is.json, bs.json ,cf.json, cis.json 파일이 생성되어 있어야 함
+
+## 8단계: 실행 종료 및 컨테이너 나오기
+```
+q 입력
+```
 
 # Directory Structure
 ```

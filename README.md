@@ -57,7 +57,7 @@ docker exec -it <container id> /bin/bash
 ```
 ## 5단계: 프로젝트 디렉토리로 이동
 ```
-# cd ~/dart-fss
+cd ~/dart-fss
 ```
 ## 6단계: test.py 파일 실행
 ```
